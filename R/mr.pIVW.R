@@ -1,5 +1,21 @@
 mr.pivw <- function(data,lambda=1,plei=TRUE,sel.pval=NULL,delta=0,Boot.Fieller=TRUE,sig=0.05) {
 
+  gamma_hat = data[,2]
+  gamma_se  = data[,4]
+  p = length(gamma_hat)
+  if(delta==0){
+    kappa = mean(gamma_hat^2/gamma_se^2)-1
+    eta = kappa*sqrt(p)
+  }else{
+    sel = sel.pval<2*pnorm(delta,lower.tail = FALSE)
+    kappa = mean(gamma_hat[sel]^2/gamma_se[sel]^2)-1
+    eta = kappa*sqrt(sum(sel))
+    sel.z = qnorm(sel.pval/2,lower.tail = FALSE)
+    q = pnorm(sel.z-delta,lower.tail = TRUE)+pnorm(-sel.z-delta,lower.tail = TRUE)
+    psi2 = sum(((gamma_hat/gamma_se)^4-6*(gamma_hat/gamma_se)^2+3)*q*(1-q))/sum(sel)
+    eta = eta/max(1,sqrt(psi2))
+  }
+
   if(delta!=0 & plei!=TRUE){
     sel = sel.pval<2*pnorm(delta,lower.tail = FALSE)
     data = data[sel,]
@@ -83,7 +99,7 @@ mr.pivw <- function(data,lambda=1,plei=TRUE,sel.pval=NULL,delta=0,Boot.Fieller=T
   }
 
   out=list(beta_hat,beta_se,pval,CI)
-  names(out)=c("beta","se","pval (Normal)","CI (Normal)")
+  names(out)=c("beta.hat","beta.se","pval (Normal)","CI (Normal)")
   if(Boot.Fieller==TRUE){
     out[[5]]=pval_BF
     out[[6]]=CI_BF
@@ -92,6 +108,7 @@ mr.pivw <- function(data,lambda=1,plei=TRUE,sel.pval=NULL,delta=0,Boot.Fieller=T
     }else{names(out)[6]="CI (Bootstrap Fieller)"}
   }
   if(plei==TRUE){out[[7]]=tau2;names(out)[7]="tau2"}
+  out[[8]] = eta; names(out)[8]="eta"
 
   return(out)
 }
